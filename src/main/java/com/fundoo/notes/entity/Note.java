@@ -1,15 +1,17 @@
 
-/*
- * Class Name  : Note
- * Description : Represents a note created by a user and maps
- *               note details and lifecycle states to the database.
- * Author      : Utakarsh Jain
- * Date        : 14/11/2026
- */
-
 package com.fundoo.notes.entity;
 
 import jakarta.persistence.*;
+import java.util.Set;
+import java.util.HashSet;
+
+/*
+ * Class Name  : Note
+ * Description : Represents a note created by a user and maps
+ *               note details, labels and lifecycle states to the database.
+ * Author      : Utakarsh Jain
+ * Date        : 25/11/2026
+ */
 
 @Entity
 @Table(name = "notes")
@@ -34,6 +36,15 @@ public class Note {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    // A note can have multiple labels.
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "note_labels",
+            joinColumns = @JoinColumn(name = "note_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    private Set<Label> labels = new HashSet<>();
 
     // Default constructor required by JPA.
     public Note() {
@@ -117,5 +128,15 @@ public class Note {
     // Assigns the note to a user.
     public void setUser(User user) {
         this.user = user;
+    }
+
+    // Returns labels assigned to the note.
+    public Set<Label> getLabels() {
+        return labels;
+    }
+
+    // Updates labels assigned to the note.
+    public void setLabels(Set<Label> labels) {
+        this.labels = labels;
     }
 }

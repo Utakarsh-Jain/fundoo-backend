@@ -22,6 +22,7 @@ public interface NoteService {
     // Retrieves all notes belonging to the authenticated user.
     List<NoteResponseDto> getAllNotes(String token);
 
+
     // Toggles the pin status of an authenticated user's note.
     NoteResponseDto togglePin(Long noteId, String token);
 

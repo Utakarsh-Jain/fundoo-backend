@@ -1,12 +1,14 @@
 
 package com.fundoo.notes.dto.response;
 
+import java.util.List;
+
 /*
  * Class Name  : NoteResponseDto
- * Description : Represents note details returned to the
- *               client after create or read operations.
- * Author      : Utkarsh Jain
- * Date        : 14/11/2026
+ * Description : Represents note details and assigned labels
+ *               returned to the client.
+ * Author      : Utakarsh Jain
+ * Date        : 25/11/2026
  */
 
 public class NoteResponseDto {
@@ -17,6 +19,7 @@ public class NoteResponseDto {
     private boolean pinned;
     private boolean archived;
     private boolean trashed;
+    private List<LabelResponseDto> labels;
 
     public NoteResponseDto() {
     }
@@ -27,7 +30,8 @@ public class NoteResponseDto {
             String description,
             boolean pinned,
             boolean archived,
-            boolean trashed) {
+            boolean trashed,
+            List<LabelResponseDto> labels) {
 
         this.id = id;
         this.title = title;
@@ -35,6 +39,7 @@ public class NoteResponseDto {
         this.pinned = pinned;
         this.archived = archived;
         this.trashed = trashed;
+        this.labels = labels;
     }
 
     public Long getId() {
@@ -83,5 +88,13 @@ public class NoteResponseDto {
 
     public void setTrashed(boolean trashed) {
         this.trashed = trashed;
+    }
+
+    public List<LabelResponseDto> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(List<LabelResponseDto> labels) {
+        this.labels = labels;
     }
 }
