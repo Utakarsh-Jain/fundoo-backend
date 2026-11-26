@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.fundoo.notes.dto.response.LabelResponseDto;
 
 /*
  * Class Name  : NoteServiceImpl
@@ -218,13 +219,23 @@ public class NoteServiceImpl implements NoteService {
 
     private NoteResponseDto mapToResponse(Note note) {
 
+        List<LabelResponseDto> labels = note.getLabels()
+                .stream()
+                .map(label -> new LabelResponseDto(
+                        label.getId(),
+                        label.getName()
+                ))
+                .toList();
+
         return new NoteResponseDto(
                 note.getId(),
                 note.getTitle(),
                 note.getDescription(),
                 note.isPinned(),
                 note.isArchived(),
-                note.isTrashed()
+                note.isTrashed(),
+                labels
         );
     }
+
 }
