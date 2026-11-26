@@ -121,6 +121,32 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(ReminderNotFoundException.class)
+    public ResponseEntity<ApiErrorResponseDto> handleReminderNotFound(
+            ReminderNotFoundException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage(),
+                request,
+                null
+        );
+    }
+
+    @ExceptionHandler(DuplicateReminderException.class)
+    public ResponseEntity<ApiErrorResponseDto> handleDuplicateReminder(
+            DuplicateReminderException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request,
+                null
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponseDto> handleGenericException(
             Exception exception,

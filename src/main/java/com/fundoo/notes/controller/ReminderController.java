@@ -2,13 +2,9 @@
 package com.fundoo.notes.controller;
 
 import com.fundoo.notes.dto.request.ReminderRequestDto;
-import com.fundoo.notes.entity.Note;
-import com.fundoo.notes.entity.User;
-import com.fundoo.notes.event.ReminderEvent;
-import com.fundoo.notes.repository.NoteRepository;
-import com.fundoo.notes.repository.UserRepository;
-import com.fundoo.notes.service.ReminderEventPublisher;
-import com.fundoo.notes.service.TokenService;
+import com.fundoo.notes.dto.request.ReminderUpdateRequestDto;
+import com.fundoo.notes.dto.response.ReminderResponseDto;
+import com.fundoo.notes.service.ReminderService;
 
 import jakarta.validation.Valid;
 
@@ -16,76 +12,66 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 
 /*
  * Class Name  : ReminderController
- * Description : Accepts reminder requests and publishes events.
+ * Description : Exposes REST APIs for managing user reminders.
  * Author      : Utakarsh Jain
- * Date        : 16/11/2026
+ * Date        : 26/11/2026
  */
 
 @RestController
 @RequestMapping("/api/reminders")
 public class ReminderController {
 
-    private final ReminderEventPublisher eventPublisher;
-    private final NoteRepository noteRepository;
-    private final UserRepository userRepository;
-    private final TokenService tokenService;
+    private final ReminderService reminderService;
 
-    public ReminderController(
-            ReminderEventPublisher eventPublisher,
-            NoteRepository noteRepository,
-            UserRepository userRepository,
-            TokenService tokenService) {
-
-        this.eventPublisher = eventPublisher;
-        this.noteRepository = noteRepository;
-        this.userRepository = userRepository;
-        this.tokenService = tokenService;
+    public ReminderController(ReminderService reminderService) {
+        this.reminderService = reminderService;
     }
 
+    // Schedules a reminder for an authenticated user's note.
     @PostMapping
-    public ResponseEntity<Map<String, String>> createReminder(
+    public ResponseEntity<ReminderResponseDto> createReminder(
             @Valid @RequestBody ReminderRequestDto request,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String token) {
 
-        if (!authorizationHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid authorization header");
-        }
-
-        String token = authorizationHeader.substring(7);
-
-        String email = tokenService.extractSubject(token);
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("User not found"));
-
-        Note note = noteRepository.findById(request.getNoteId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Note not found"));
-
-        if (!note.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException(
-                    "You cannot set reminder for this note");
-        }
-
-        ReminderEvent event = new ReminderEvent(
-                user.getId(),
-                note.getId(),
-                user.getEmail(),
-                note.getTitle(),
-                request.getReminderTime()
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                reminderService.createReminder(token, request)
         );
+    }
 
-        eventPublisher.publish(event);
+    // Retrieves all reminders belonging to the authenticated user.
+    @GetMapping
+    public ResponseEntity<List<ReminderResponseDto>> getAllReminders(
+            @RequestHeader("Authorization") String token) {
 
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(Map.of(
-                        "message",
-                        "Reminder event published successfully"
-                ));
+        return ResponseEntity.ok(
+                reminderService.getAllReminders(token)
+        );
+    }
+
+    // Updates the time of an authenticated user's reminder.
+    @PutMapping("/{reminderId}")
+    public ResponseEntity<ReminderResponseDto> updateReminder(
+            @PathVariable Long reminderId,
+            @Valid @RequestBody ReminderUpdateRequestDto request,
+            @RequestHeader("Authorization") String token) {
+
+        return ResponseEntity.ok(
+                reminderService.updateReminder(reminderId, token, request)
+        );
+    }
+
+    // Deletes an authenticated user's reminder.
+    @DeleteMapping("/{reminderId}")
+    public ResponseEntity<Void> deleteReminder(
+            @PathVariable Long reminderId,
+            @RequestHeader("Authorization") String token) {
+
+        reminderService.deleteReminder(reminderId, token);
+
+        return ResponseEntity.noContent().build();
     }
 }
