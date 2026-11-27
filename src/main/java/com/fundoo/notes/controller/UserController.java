@@ -4,6 +4,7 @@ package com.fundoo.notes.controller;
 import com.fundoo.notes.dto.request.LoginRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.UserProfileResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.service.UserService;
 import jakarta.validation.Valid;
@@ -49,5 +50,13 @@ public class UserController {
         LoginResponseDto response = userService.login(requestDto);
 
         return ResponseEntity.ok(response);
+    }
+
+    // Returns the authenticated user's profile details.
+    @GetMapping("/profile")
+    public ResponseEntity<UserProfileResponseDto> getProfile(
+            @RequestHeader("Authorization") String token) {
+
+        return ResponseEntity.ok(userService.getProfile(token));
     }
 }

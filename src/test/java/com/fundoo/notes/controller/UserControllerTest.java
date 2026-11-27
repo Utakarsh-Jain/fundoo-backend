@@ -4,6 +4,7 @@ package com.fundoo.notes.controller;
 import com.fundoo.notes.dto.request.LoginRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.UserProfileResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -71,5 +72,27 @@ class UserControllerTest {
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertNotNull(result.getBody());
         assertEquals("sample.jwt.token", result.getBody().getToken());
+    }
+
+    @Test
+    void shouldReturnOkWhenProfileFetched() {
+
+        String token = "Bearer sample.jwt.token";
+
+        UserProfileResponseDto response =
+                new UserProfileResponseDto(
+                        "Utakarsh", "utakarsh@example.com"
+                );
+
+        when(userService.getProfile(token)).thenReturn(response);
+
+        ResponseEntity<UserProfileResponseDto> result =
+                userController.getProfile(token);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals("Utakarsh", result.getBody().getFirstName());
+        assertEquals("utakarsh@example.com", result.getBody().getEmail());
+        verify(userService).getProfile(token);
     }
 }

@@ -4,6 +4,7 @@ package com.fundoo.notes.service.impl;
 import com.fundoo.notes.dto.request.LoginRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.UserProfileResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.event.UserRegistrationEvent;
@@ -137,5 +138,42 @@ public class UserServiceImpl implements UserService {
         logger.info("Login successful for user ID: {}", user.getId());
 
         return new LoginResponseDto(token, "Login successful");
+    }
+
+    @Override
+    public UserProfileResponseDto getProfile(String token) {
+
+        User user = findUserFromToken(token);
+
+        logger.info("Profile fetched for user ID: {}", user.getId());
+
+        return new UserProfileResponseDto(
+                user.getFirstName(),
+                user.getEmail()
+        );
+    }
+
+    private User findUserFromToken(String token) {
+
+        if (token == null || token.isBlank()) {
+            logger.warn("Authorization token is missing");
+            throw new InvalidCredentialsException(
+                    "Authorization token is required");
+        }
+
+        String jwt = token.startsWith("Bearer ")
+                ? token.substring(7).trim()
+                : token.trim();
+
+        if (!tokenService.isTokenValid(jwt)) {
+            logger.warn("Invalid or expired JWT");
+            throw new InvalidCredentialsException("Invalid or expired token");
+        }
+
+        String email = tokenService.extractSubject(jwt);
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException(
+                        "User associated with token not found"));
     }
 }
