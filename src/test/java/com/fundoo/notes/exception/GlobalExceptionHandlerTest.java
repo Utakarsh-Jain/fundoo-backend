@@ -2,8 +2,8 @@
 /*
  * Class Name  : GlobalExceptionHandlerTest
  * Description : Tests centralized exception handling for duplicate
- *               email, invalid credentials, validation failures
- *               and unexpected exceptions.
+ *               email, invalid credentials, validation failures,
+ *               attachment errors and unexpected exceptions.
  * Author      : Utakarsh Jain
  * Date        : 14/11/2026
  */
@@ -32,6 +32,9 @@ class GlobalExceptionHandlerTest {
     private GlobalExceptionHandler exceptionHandler;
     private HttpServletRequest request;
 
+    /**
+     * Initializes the handler and a mocked HTTP request.
+     */
     @BeforeEach
     void setUp() {
         // Initialize handler and mock HTTP request.
@@ -42,6 +45,9 @@ class GlobalExceptionHandlerTest {
                 .thenReturn("/api/users/register");
     }
 
+    /**
+     * Verifies duplicate email exceptions map to conflict responses.
+     */
     @Test
     void shouldHandleDuplicateEmailException() {
 
@@ -68,6 +74,9 @@ class GlobalExceptionHandlerTest {
         );
     }
 
+    /**
+     * Verifies invalid credentials map to unauthorized responses.
+     */
     @Test
     void shouldHandleInvalidCredentialsException() {
 
@@ -93,6 +102,9 @@ class GlobalExceptionHandlerTest {
         );
     }
 
+    /**
+     * Verifies bean validation errors include field-level messages.
+     */
     @Test
     void shouldHandleValidationException() {
 
@@ -133,6 +145,59 @@ class GlobalExceptionHandlerTest {
         );
     }
 
+    /**
+     * Verifies missing attachments map to not found responses.
+     */
+    @Test
+    void shouldHandleAttachmentNotFoundException() {
+
+        AttachmentNotFoundException exception =
+                new AttachmentNotFoundException(
+                        "Attachment not found"
+                );
+
+        ResponseEntity<ApiErrorResponseDto> response =
+                exceptionHandler.handleAttachmentNotFound(
+                        exception, request
+                );
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(404, response.getBody().getStatus());
+        assertEquals(
+                "Attachment not found",
+                response.getBody().getMessage()
+        );
+    }
+
+    /**
+     * Verifies invalid attachment uploads map to bad request responses.
+     */
+    @Test
+    void shouldHandleInvalidAttachmentException() {
+
+        InvalidAttachmentException exception =
+                new InvalidAttachmentException(
+                        "Unsupported file type"
+                );
+
+        ResponseEntity<ApiErrorResponseDto> response =
+                exceptionHandler.handleInvalidAttachment(
+                        exception, request
+                );
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals(
+                "Unsupported file type",
+                response.getBody().getMessage()
+        );
+    }
+
+    /**
+     * Verifies unknown exceptions map to internal server error responses.
+     */
     @Test
     void shouldHandleUnexpectedException() {
 
