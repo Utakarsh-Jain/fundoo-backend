@@ -1,6 +1,7 @@
 
 package com.fundoo.notes.service.impl;
 
+import com.fundoo.notes.service.AuthTokenStore;
 import com.fundoo.notes.service.TokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -25,17 +26,20 @@ public class JwtTokenService implements TokenService {
 
     private final SecretKey secretKey;
     private final long expirationMillis;
+    private final AuthTokenStore authTokenStore;
 
     // Reads the Base64 secret and token expiry from configuration.
     public JwtTokenService(
             @Value("${app.jwt.secret}") String base64Secret,
-            @Value("${app.jwt.expiration-ms}") long expirationMillis) {
+            @Value("${app.jwt.expiration-ms}") long expirationMillis,
+            AuthTokenStore authTokenStore) {
 
         byte[] keyBytes = Decoders.BASE64.decode(base64Secret);
 
         // HMAC SHA-256 requires a key of at least 256 bits.
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMillis = expirationMillis;
+        this.authTokenStore = authTokenStore;
     }
 
     @Override
@@ -70,6 +74,12 @@ public class JwtTokenService implements TokenService {
 
     @Override
     public boolean isTokenValid(String token) {
+
+        if (token == null || token.isBlank()
+                || authTokenStore.isJwtDenied(token)) {
+
+            return false;
+        }
 
         try {
             extractSubject(token);

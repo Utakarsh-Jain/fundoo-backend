@@ -16,8 +16,10 @@ import com.fundoo.notes.dto.response.LoginResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.exception.DuplicateEmailException;
+import com.fundoo.notes.exception.EmailNotVerifiedException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.AuthService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
 import com.fundoo.notes.service.UserRegistrationEventPublisher;
@@ -51,6 +53,9 @@ class UserServiceImplTest {
 
     @Mock
     private UserRegistrationEventPublisher eventPublisher;
+
+    @Mock
+    private AuthService authService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -96,6 +101,7 @@ class UserServiceImplTest {
         // Verify password encoding and repository save.
         verify(passwordService).encodePassword("Password123");
         verify(userRepository).save(any(User.class));
+        verify(authService).sendVerificationEmail("utakarsh@example.com");
     }
 
     /*
@@ -141,6 +147,7 @@ class UserServiceImplTest {
         user.setFirstName("Utakarsh");
         user.setEmail("utakarsh@example.com");
         user.setPassword("$2a$10$encodedPasswordHash");
+        user.setEmailVerified(true);
 
         // Mock user lookup.
         when(userRepository.findByEmail(request.getEmail()))
@@ -231,6 +238,32 @@ class UserServiceImplTest {
         );
 
         // Token must never be generated for invalid credentials.
+        verify(tokenService, never()).generateToken(anyString());
+    }
+
+    @Test
+    void shouldRejectLoginWhenEmailIsNotVerified() {
+
+        LoginRequestDto request = new LoginRequestDto();
+        request.setEmail("utakarsh@example.com");
+        request.setPassword("Password123");
+
+        User user = new User();
+        user.setEmail("utakarsh@example.com");
+        user.setPassword("$2a$10$encodedPasswordHash");
+
+        when(userRepository.findByEmail(request.getEmail()))
+                .thenReturn(Optional.of(user));
+        when(passwordService.matchesPassword(
+                "Password123",
+                "$2a$10$encodedPasswordHash"
+        )).thenReturn(true);
+
+        assertThrows(
+                EmailNotVerifiedException.class,
+                () -> userService.login(request)
+        );
+
         verify(tokenService, never()).generateToken(anyString());
     }
 }

@@ -8,8 +8,10 @@ import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.event.UserRegistrationEvent;
 import com.fundoo.notes.exception.DuplicateEmailException;
+import com.fundoo.notes.exception.EmailNotVerifiedException;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.UserRepository;
+import com.fundoo.notes.service.AuthService;
 import com.fundoo.notes.service.PasswordService;
 import com.fundoo.notes.service.TokenService;
 import com.fundoo.notes.service.UserRegistrationEventPublisher;
@@ -37,17 +39,20 @@ public class UserServiceImpl implements UserService {
     private final PasswordService passwordService;
     private final TokenService tokenService;
     private final UserRegistrationEventPublisher eventPublisher;
+    private final AuthService authService;
 
     public UserServiceImpl(
             UserRepository userRepository,
             PasswordService passwordService,
             TokenService tokenService,
-            UserRegistrationEventPublisher eventPublisher) {
+            UserRegistrationEventPublisher eventPublisher,
+            AuthService authService) {
 
         this.userRepository = userRepository;
         this.passwordService = passwordService;
         this.tokenService = tokenService;
         this.eventPublisher = eventPublisher;
+        this.authService = authService;
     }
 
     @Override
@@ -85,6 +90,8 @@ public class UserServiceImpl implements UserService {
         logger.info("User registration event published for user ID: {}",
                 savedUser.getId());
 
+        authService.sendVerificationEmail(savedUser.getEmail());
+
         return new UserResponseDto(
                 savedUser.getId(),
                 savedUser.getFirstName(),
@@ -116,6 +123,13 @@ public class UserServiceImpl implements UserService {
                     requestDto.getEmail());
             throw new InvalidCredentialsException(
                     "Invalid email or password");
+        }
+
+        if (!user.isEmailVerified()) {
+            logger.warn("Login blocked: email not verified for user ID: {}",
+                    user.getId());
+            throw new EmailNotVerifiedException(
+                    "Email is not verified. Please verify your email first.");
         }
 
         String token = tokenService.generateToken(user.getEmail());

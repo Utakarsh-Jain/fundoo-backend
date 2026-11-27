@@ -147,6 +147,32 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiErrorResponseDto> handleEmailNotVerified(
+            EmailNotVerifiedException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage(),
+                request,
+                null
+        );
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiErrorResponseDto> handleInvalidToken(
+            InvalidTokenException exception,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request,
+                null
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponseDto> handleGenericException(
             Exception exception,

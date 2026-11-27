@@ -1,12 +1,16 @@
 
 package com.fundoo.notes.service.impl;
 
+import com.fundoo.notes.service.AuthTokenStore;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /*
  * Class Name  : JwtTokenServiceTest
@@ -18,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class JwtTokenServiceTest {
 
     private JwtTokenService tokenService;
+    private AuthTokenStore authTokenStore;
 
     // Test-only secret. Never use this key in the real application.
     private final String testSecret =
@@ -27,7 +32,8 @@ class JwtTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        tokenService = new JwtTokenService(testSecret, 60000);
+        authTokenStore = mock(AuthTokenStore.class);
+        tokenService = new JwtTokenService(testSecret, 60000, authTokenStore);
     }
 
     @Test
@@ -70,11 +76,19 @@ class JwtTokenServiceTest {
     void shouldRejectExpiredToken() {
 
         JwtTokenService expiredTokenService =
-                new JwtTokenService(testSecret, -1000);
+                new JwtTokenService(testSecret, -1000, authTokenStore);
 
         String expiredToken =
                 expiredTokenService.generateToken("user@example.com");
 
         assertFalse(expiredTokenService.isTokenValid(expiredToken));
+    }
+
+    @Test
+    void shouldRejectDeniedToken() {
+        String token = tokenService.generateToken("user@example.com");
+        when(authTokenStore.isJwtDenied(token)).thenReturn(true);
+
+        assertFalse(tokenService.isTokenValid(token));
     }
 }
