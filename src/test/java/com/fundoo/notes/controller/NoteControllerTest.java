@@ -167,4 +167,69 @@ class NoteControllerTest {
         verify(noteService).toggleTrash(10L, "Bearer sample.jwt.token");
     }
 
+    @Test
+    void shouldReturnOkWhenNoteIsUpdated() {
+
+        NoteRequestDto request = new NoteRequestDto(
+                "Updated title",
+                "Updated description"
+        );
+        NoteResponseDto response = mock(NoteResponseDto.class);
+
+        when(noteService.updateNote(
+                10L,
+                request,
+                "Bearer sample.jwt.token"))
+                .thenReturn(response);
+
+        ResponseEntity<NoteResponseDto> result = noteController.updateNote(
+                10L,
+                request,
+                "Bearer sample.jwt.token"
+        );
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertSame(response, result.getBody());
+
+        verify(noteService).updateNote(
+                10L,
+                request,
+                "Bearer sample.jwt.token"
+        );
+    }
+
+    @Test
+    void shouldReturnOkWhenNoteIsRestored() {
+
+        NoteResponseDto response = mock(NoteResponseDto.class);
+
+        when(noteService.restoreNote(10L, "Bearer sample.jwt.token"))
+                .thenReturn(response);
+
+        ResponseEntity<NoteResponseDto> result =
+                noteController.restoreNote(10L, "Bearer sample.jwt.token");
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertSame(response, result.getBody());
+
+        verify(noteService).restoreNote(10L, "Bearer sample.jwt.token");
+    }
+
+    @Test
+    void shouldReturnNoContentWhenNoteIsPermanentlyDeleted() {
+
+        ResponseEntity<Void> result = noteController.permanentlyDeleteNote(
+                10L,
+                "Bearer sample.jwt.token"
+        );
+
+        assertEquals(HttpStatus.NO_CONTENT, result.getStatusCode());
+        assertNull(result.getBody());
+
+        verify(noteService).permanentlyDeleteNote(
+                10L,
+                "Bearer sample.jwt.token"
+        );
+    }
+
 }

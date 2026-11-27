@@ -53,6 +53,38 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{noteId}")
+    public ResponseEntity<NoteResponseDto> updateNote(
+            @PathVariable Long noteId,
+            @Valid @RequestBody NoteRequestDto requestDto,
+            @RequestHeader("Authorization") String token) {
+
+        NoteResponseDto response =
+                noteService.updateNote(noteId, requestDto, token);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{noteId}/restore")
+    public ResponseEntity<NoteResponseDto> restoreNote(
+            @PathVariable Long noteId,
+            @RequestHeader("Authorization") String token) {
+
+        NoteResponseDto response = noteService.restoreNote(noteId, token);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{noteId}")
+    public ResponseEntity<Void> permanentlyDeleteNote(
+            @PathVariable Long noteId,
+            @RequestHeader("Authorization") String token) {
+
+        noteService.permanentlyDeleteNote(noteId, token);
+
+        return ResponseEntity.noContent().build();
+    }
+
     // Toggles the pin status of a note.
     @PatchMapping("/{noteId}/pin")
     public ResponseEntity<NoteResponseDto> togglePin(

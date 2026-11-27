@@ -4,9 +4,11 @@ package com.fundoo.notes.service.impl;
 import com.fundoo.notes.dto.request.NoteRequestDto;
 import com.fundoo.notes.dto.response.NoteResponseDto;
 import com.fundoo.notes.entity.Note;
+import com.fundoo.notes.entity.Reminder;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.repository.NoteRepository;
+import com.fundoo.notes.repository.ReminderRepository;
 import com.fundoo.notes.repository.UserRepository;
 import com.fundoo.notes.service.TokenService;
 
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +47,9 @@ class NoteServiceImplTest {
 
     @Mock
     private TokenService tokenService;
+
+    @Mock
+    private ReminderRepository reminderRepository;
 
     @InjectMocks
     private NoteServiceImpl noteService;
@@ -468,5 +474,72 @@ class NoteServiceImplTest {
 
         verify(noteRepository, never()).findById(anyLong());
         verify(noteRepository, never()).save(any(Note.class));
+    }
+
+    @Test
+    void shouldUpdateNoteSuccessfully() {
+
+        Note note = prepareNoteForStateTest(10L);
+        NoteRequestDto request = new NoteRequestDto(
+                "Updated title",
+                "Updated description"
+        );
+
+        NoteResponseDto response =
+                noteService.updateNote(10L, request, "sample.jwt.token");
+
+        assertEquals("Updated title", response.getTitle());
+        assertEquals("Updated description", response.getDescription());
+        verify(noteRepository).save(note);
+    }
+
+    @Test
+    void shouldRestoreTrashedNoteExplicitly() {
+
+        Note note = prepareNoteForStateTest(10L);
+        note.setTrashed(true);
+
+        NoteResponseDto response =
+                noteService.restoreNote(10L, "sample.jwt.token");
+
+        assertFalse(response.isTrashed());
+        verify(noteRepository).save(note);
+    }
+
+    @Test
+    void shouldPermanentlyDeleteNoteAndItsReminder() {
+
+        String token = "sample.jwt.token";
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("utakarsh@example.com");
+
+        Note note = new Note();
+        note.setId(10L);
+        note.setTitle("Testing Note");
+        note.setDescription("Permanent delete test");
+        note.setTrashed(true);
+        note.setUser(user);
+
+        Reminder reminder = new Reminder(
+                note,
+                user,
+                LocalDateTime.now().plusDays(1)
+        );
+
+        when(tokenService.isTokenValid(token)).thenReturn(true);
+        when(tokenService.extractSubject(token))
+                .thenReturn("utakarsh@example.com");
+        when(userRepository.findByEmail("utakarsh@example.com"))
+                .thenReturn(Optional.of(user));
+        when(noteRepository.findById(10L)).thenReturn(Optional.of(note));
+        when(reminderRepository.findByNoteIdAndUserId(10L, 1L))
+                .thenReturn(Optional.of(reminder));
+
+        noteService.permanentlyDeleteNote(10L, token);
+
+        verify(reminderRepository).delete(reminder);
+        verify(noteRepository).delete(note);
     }
 }
