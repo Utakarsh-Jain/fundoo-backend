@@ -13,6 +13,7 @@ package com.fundoo.notes.service.impl;
 import com.fundoo.notes.dto.request.LoginRequestDto;
 import com.fundoo.notes.dto.request.UserRegisterRequestDto;
 import com.fundoo.notes.dto.response.LoginResponseDto;
+import com.fundoo.notes.dto.response.UserProfileResponseDto;
 import com.fundoo.notes.dto.response.UserResponseDto;
 import com.fundoo.notes.entity.User;
 import com.fundoo.notes.exception.DuplicateEmailException;
@@ -265,5 +266,49 @@ class UserServiceImplTest {
         );
 
         verify(tokenService, never()).generateToken(anyString());
+    }
+
+    /*
+     * Test 7:
+     * Verify that profile details come from the authenticated JWT user.
+     */
+    @Test
+    void shouldReturnProfileForAuthenticatedUser() {
+
+        String token = "Bearer sample.jwt.token";
+
+        User user = new User();
+        user.setId(1L);
+        user.setFirstName("Utakarsh");
+        user.setEmail("utakarsh@example.com");
+
+        when(tokenService.isTokenValid("sample.jwt.token")).thenReturn(true);
+        when(tokenService.extractSubject("sample.jwt.token"))
+                .thenReturn("utakarsh@example.com");
+        when(userRepository.findByEmail("utakarsh@example.com"))
+                .thenReturn(Optional.of(user));
+
+        UserProfileResponseDto response = userService.getProfile(token);
+
+        assertEquals("Utakarsh", response.getFirstName());
+        assertEquals("utakarsh@example.com", response.getEmail());
+    }
+
+    /*
+     * Test 8:
+     * Verify that an invalid token cannot fetch profile details.
+     */
+    @Test
+    void shouldRejectProfileFetchForInvalidToken() {
+
+        when(tokenService.isTokenValid("invalid.jwt.token"))
+                .thenReturn(false);
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.getProfile("Bearer invalid.jwt.token")
+        );
+
+        verify(userRepository, never()).findByEmail(anyString());
     }
 }
