@@ -19,9 +19,17 @@ public interface NoteService {
     // Creates a note for the authenticated user.
     NoteResponseDto createNote(NoteRequestDto requestDto, String token);
 
+    NoteResponseDto updateNote(
+            Long noteId,
+            NoteRequestDto requestDto,
+            String token);
+
     // Retrieves all notes belonging to the authenticated user.
     List<NoteResponseDto> getAllNotes(String token);
 
+    NoteResponseDto restoreNote(Long noteId, String token);
+
+    void permanentlyDeleteNote(Long noteId, String token);
 
     // Toggles the pin status of an authenticated user's note.
     NoteResponseDto togglePin(Long noteId, String token);

@@ -8,6 +8,7 @@ import com.fundoo.notes.entity.User;
 import com.fundoo.notes.exception.InvalidCredentialsException;
 import com.fundoo.notes.exception.NoteNotFoundException;
 import com.fundoo.notes.repository.NoteRepository;
+import com.fundoo.notes.repository.ReminderRepository;
 import com.fundoo.notes.repository.UserRepository;
 import com.fundoo.notes.service.NoteService;
 import com.fundoo.notes.service.TokenService;
@@ -39,15 +40,18 @@ public class NoteServiceImpl implements NoteService {
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final TokenService tokenService;
+    private final ReminderRepository reminderRepository;
 
     public NoteServiceImpl(
             NoteRepository noteRepository,
             UserRepository userRepository,
-            TokenService tokenService) {
+            TokenService tokenService,
+            ReminderRepository reminderRepository) {
 
         this.noteRepository = noteRepository;
         this.userRepository = userRepository;
         this.tokenService = tokenService;
+        this.reminderRepository = reminderRepository;
     }
 
     @Override
@@ -97,6 +101,63 @@ public class NoteServiceImpl implements NoteService {
         return notes.stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "notes", allEntries = true)
+    public NoteResponseDto updateNote(
+            Long noteId,
+            NoteRequestDto requestDto,
+            String token) {
+
+        logger.info("Note update requested for Note ID: {}", noteId);
+
+        Note note = findNoteForUser(noteId, token);
+        note.setTitle(requestDto.getTitle());
+        note.setDescription(requestDto.getDescription());
+
+        Note updatedNote = noteRepository.save(note);
+
+        logger.info("Note updated successfully. Note ID: {}", noteId);
+
+        return mapToResponse(updatedNote);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "notes", allEntries = true)
+    public NoteResponseDto restoreNote(Long noteId, String token) {
+
+        logger.info("Note restore requested for Note ID: {}", noteId);
+
+        Note note = findNoteForUser(noteId, token);
+        note.setTrashed(false);
+
+        Note restoredNote = noteRepository.save(note);
+
+        logger.info("Note restored successfully. Note ID: {}", noteId);
+
+        return mapToResponse(restoredNote);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "notes", allEntries = true)
+    public void permanentlyDeleteNote(Long noteId, String token) {
+
+        logger.info("Permanent delete requested for Note ID: {}", noteId);
+
+        Note note = findNoteForUser(noteId, token);
+
+        reminderRepository.findByNoteIdAndUserId(
+                        noteId,
+                        note.getUser().getId())
+                .ifPresent(reminderRepository::delete);
+
+        noteRepository.delete(note);
+
+        logger.info("Note permanently deleted. Note ID: {}", noteId);
     }
 
     @Override
