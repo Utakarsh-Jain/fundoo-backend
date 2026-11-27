@@ -54,11 +54,13 @@ class UserTest {
         user.setFirstName("Utkarsh");
         user.setEmail("utkarsh@gmail.com");
         user.setPassword("password123");
+        user.setEmailVerified(true);
 
         assertEquals(1L, user.getId());
         assertEquals("Utkarsh", user.getFirstName());
         assertEquals("utkarsh@gmail.com", user.getEmail());
         assertEquals("password123", user.getPassword());
+        assertTrue(user.isEmailVerified());
     }
 
     /*
@@ -76,5 +78,6 @@ class UserTest {
         assertNull(user.getFirstName());
         assertNull(user.getEmail());
         assertNull(user.getPassword());
+        assertFalse(user.isEmailVerified());
     }
 }
